@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:siren/src/screens/home.dart';
+import 'package:siren/src/classes/user.dart';
+import 'package:siren/src/screens/create_profile.dart';
 import 'package:siren/src/widgets/theme_filled_button.dart';
+import 'package:siren/src/widgets/top_bar.dart';
 import '../widgets/password_field.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 class Register extends StatefulWidget {
-  const Register({super.key});
+  const Register({super.key, this.emailController, this.passwordController});
+
+  final TextEditingController? emailController;
+  final TextEditingController? passwordController;
 
   @override
   State<Register> createState() => _RegisterState();
@@ -16,24 +20,18 @@ class _RegisterState extends State<Register>{
   late TextEditingController passwordController;
   late TextEditingController repeatPasswordController;
 
-  late bool loading;
-
   @override
   void initState() {
-    super.initState();
-
-    emailController = TextEditingController();
-    passwordController = TextEditingController();
+    emailController = widget.emailController ?? TextEditingController();
+    passwordController = widget.passwordController ?? TextEditingController();
     repeatPasswordController = TextEditingController();
 
-    loading = false;
+    super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-
-    const titleStyle = TextStyle(fontSize: 45, fontWeight: FontWeight.w600);
 
     const secondaryTextStyle = TextStyle(
       fontWeight: FontWeight.w400,
@@ -52,16 +50,7 @@ class _RegisterState extends State<Register>{
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Center(
-              child: SizedBox(
-                width: MediaQuery.of(context).size.width * .8,
-                child: const FittedBox(
-                  fit: BoxFit.fitWidth,
-                  child: Text('Create an account', style: titleStyle)
-                ),
-              ),
-            ),
-            const SizedBox(height: 35),
+            const TopBar("Create an account"),
             TextField(
               decoration: textFieldDecoration('Email'),
               style: const TextStyle(decorationThickness: 0),
@@ -79,11 +68,9 @@ class _RegisterState extends State<Register>{
               style: const TextStyle(decorationThickness: 0),
               controller: repeatPasswordController,
             ),
-            const SizedBox(height: 25),
-            const Text('By creating an account, you agree to our Terms of Service and Privacy Policy', style: secondaryTextStyle, textAlign: TextAlign.center,),
-            const SizedBox(height: 25),
-            ThemeFilledButton(register, 'Sign up'),
             const SizedBox(height: 45),
+            ThemeFilledButton(register, 'Continue'),
+            const SizedBox(height: 35),
             const Text("Already have an account?", style: secondaryTextStyle),
             ThemeFilledButton(moveToLogin, 'Sign in'),
           ],
@@ -94,26 +81,22 @@ class _RegisterState extends State<Register>{
 
   void moveToLogin() => Navigator.pop(context);
 
-  void register() async {
-    setState(() => loading = true);
+  void register() {
+    if (emailController.text.isEmpty || passwordController.text.isEmpty) return;
+    if (passwordController.text != repeatPasswordController.text) return;
 
-    final email = emailController.text;
-    final password = passwordController.text;
-    final repeatPassword = repeatPasswordController.text;
+    SirenUser user = SirenUser(emailController.text, passwordController.text);
 
-    if (password != repeatPassword) {
-      //TODO: Show error message
-    }
-
-    try {
-      final userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(email: email, password: password);
-      final user = userCredential.user;
-
-      if (user == null) throw Exception('Error!');
-    } catch (e) {
-      //TODO: Show error message
-    } finally {
-      setState(() => loading = false);
-    }
+    Navigator.push(
+        context,
+        PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) => CreateProfile(user),
+            transitionDuration: const Duration(milliseconds: 200),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) => SlideTransition(
+              position: Tween(begin: const Offset(1, 0), end: Offset.zero).animate(animation),
+              child: child,
+            )
+        )
+    );
   }
 }

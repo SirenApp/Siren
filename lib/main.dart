@@ -35,7 +35,6 @@ class _MyApp extends State<MyApp> {
       setState(() {
         home = user == null ? const Login() : const Home();
       });
-      print(home);
     });
 
     super.initState();

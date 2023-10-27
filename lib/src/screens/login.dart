@@ -1,10 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:siren/src/widgets/error_dialog.dart';
 import 'package:siren/src/screens/register.dart';
 import 'package:siren/src/widgets/forgot_password_modal.dart';
 import 'package:siren/src/widgets/password_field.dart';
 import 'package:siren/src/widgets/theme_filled_button.dart';
-import 'home.dart';
+import 'package:siren/src/widgets/top_bar.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -35,8 +36,6 @@ class _LoginState extends State<Login> {
 
     final containerDecoration = BoxDecoration(color: colorScheme.background);
 
-    const titleStyle = TextStyle(fontSize: 45, fontWeight: FontWeight.w600);
-
     InputDecoration textFieldDecoration(final String label) => InputDecoration(
       labelText: label,
       labelStyle: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold, fontSize: 20),
@@ -62,8 +61,7 @@ class _LoginState extends State<Login> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Center(child: Text('Log in', style: titleStyle)),
-              const SizedBox(height: 35),
+              const TopBar("Log in"),
               TextField(
                 decoration: textFieldDecoration('Email'),
                 style: const TextStyle(decorationThickness: 0),
@@ -98,10 +96,10 @@ class _LoginState extends State<Login> {
   void moveToRegister() => Navigator.push(
       context,
       PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) => const Register(),
+          pageBuilder: (context, animation, secondaryAnimation) => Register(emailController: emailController, passwordController: passwordController),
           transitionDuration: const Duration(milliseconds: 200),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) => SlideTransition(position:
-          Tween(begin: const Offset(0, 1), end: Offset.zero).animate(animation),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) => SlideTransition(
+            position: Tween(begin: const Offset(0, 1), end: Offset.zero).animate(animation),
             child: child,
           )
       )
@@ -112,34 +110,29 @@ class _LoginState extends State<Login> {
     final email = emailController.text;
     final password = passwordController.text;
 
-    if (email.isEmpty || password.isEmpty) {
-      //TODO: Show error message
-    }
+    // if (email.isEmpty || password.isEmpty) {
+    //   showErrorDialog(
+    //     context,
+    //     title: "Error",
+    //     description: "Email or password can't be empty!",
+    //     buttons: ["OK"],
+    //     dismissible: true,
+    //     actions: (button, dismiss) {
+    //       dismiss();
+    //     }
+    //   );
+    // }
 
     try {
-      final userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(email: email, password: password);
-      final user = userCredential.user;
-
-      if (user == null) throw Exception('Error!');
-
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: email,
+          password: password
+      );
+    } on FirebaseAuthException catch (e) {
       if (!mounted) return;
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Home()));
-    } catch (e) {
-      //TODO: Show error message
+      showErrorDialog(context, title: "Error", description: e.code);
     } finally {
       setState(() => loading = false);
-    }
-  }
-
-  void loginWithToken(String token) async {
-    try {
-      final userCredential = await FirebaseAuth.instance.signInWithCustomToken(token);
-      final user = userCredential.user;
-
-      if (user == null) throw Exception('Error!');
-
-    } catch (e) {
-      //TODO: Show error message
     }
   }
 }

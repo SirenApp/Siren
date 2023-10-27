@@ -1,11 +1,14 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:siren/src/widgets/theme_filled_button.dart';
 
 class ForgotPasswordModal {
-  const ForgotPasswordModal(this.context, {this.controller});
+  ForgotPasswordModal(this.context, {controller}) {
+    this.controller = controller ?? TextEditingController();
+  }
 
   final BuildContext context;
-  final TextEditingController? controller;
+  late TextEditingController controller;
 
   void show() {
     final colorScheme = Theme.of(context).colorScheme;
@@ -23,15 +26,30 @@ class ForgotPasswordModal {
       backgroundColor: colorScheme.background,
       isScrollControlled: true,
       shape: modalShape,
-      builder: (context) => _Modal(emailController: controller),
+      builder: (context) => _Modal(controller, context),
     );
   }
 }
 
-class _Modal extends StatelessWidget {
-  const _Modal({this.emailController});
+class _Modal extends StatefulWidget {
+  const _Modal(this.emailController, this.context);
 
-  final TextEditingController? emailController;
+  final TextEditingController emailController;
+  final BuildContext context;
+
+  @override
+  State<_Modal> createState() => _ModalState();
+}
+
+class _ModalState extends State<_Modal> {
+  late bool loading;
+
+  @override
+  void initState() {
+    loading = false;
+
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,14 +75,29 @@ class _Modal extends StatelessWidget {
               TextField(
                 decoration: textFieldDecoration('Email'),
                 style: const TextStyle(decorationThickness: 0),
-                controller: emailController,
+                controller: widget.emailController,
               ),
               const SizedBox(height: 20),
-              ThemeFilledButton(() => {}, 'Send'),
+              ThemeFilledButton(sendResetLink, 'Send', loading: loading),
             ],
           ),
         ),
       ),
     );
+  }
+
+  sendResetLink() async {
+    setState(() {
+      loading = true;
+    });
+
+    await FirebaseAuth.instance.sendPasswordResetEmail(email: widget.emailController.text);
+
+    setState(() {
+        loading = false;
+    });
+
+    if (!context.mounted) return;
+    Navigator.pop(context);
   }
 }
